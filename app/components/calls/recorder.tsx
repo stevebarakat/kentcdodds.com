@@ -56,6 +56,7 @@ interface RecorderContext {
 
 const recorderMachine = createMachine<RecorderContext>(
   {
+    /** @xstate-layout N4IgpgJg5mDOIC5QCcwGMD2yJmQOhgBdCBLAOygBEwA3EtOAYggzLD3JowGt3VNsuAmGLkqtenAScMaAIalWAbQAMAXVVrEoAA4ZYJRWW0gAHogBsKlXgCMAGhABPRABZbFgL6fH-LDnwiUgpqOgZYRlxkLDwdABsFADMsAFs8P0FAkWDxMKkZeSNNTRM9AyMTcwQAZmqATjtHFwRXd29fdH8hWDA49BzGHr60IvVS-UMSVkrEACZ6pstXavaQDIC8KKxGVEJkJxKkEDLJ6aOq2dsG22tbu9vZxZbqgA48AFZV9aFUOQgnRhoAAWcgoYFCkkOugmFXOlhUTwsFheX06mXSYD+ANghDkyEIUOOMKmxjhCAsdQa70RyNRAg26zEsQSTjEjBSkBIcgASmiAgBhX6ESCEk6w0BVADs1VcTxuks+PjWfJ+fKZ8TkrIojB0cgArj1RcSzhLELZZtK5SoFXSuvhGRRmZq2TiMDojeUSTMELZ3rM6nLbLYVkrvva1Y7dQbIDs4HqOR7TqTTT6VLZJVabaGVeH6er9T0IINCG7E+KzGabjYkTXazWM84zbUQx16aq847XTodGzgXqyNxYGWvWSbjK8HXJxZqY2fciVLb0Sw2LGcXiCWMjmKRyn3hYHLOkSjVmQMDh4Ecw+NPSaKwgALR1CxPe+uFSzRcbIJiCHha9J709wPZpLlcT9ul6foxH-csqmqG4nklF4W2VNt8C2ZAYJ3O83wRWd3neWxwPDLEsNvKoLElZ98MI4iMQ7KAyOTO9XxeF9ZmsOiHSgJ0tUYrdjWYqU6jY2cRJQsN6P8fNowgJjvRuOpHlnc02mzNCpOwJkux7Ch5NHFQLFlFTXHmOjlzAfTd2RQMXi8bxPCAA */
     id: 'recorder',
     predictableActionArguments: true,
     context: {
@@ -68,14 +69,14 @@ const recorderMachine = createMachine<RecorderContext>(
     states: {
       gettingDevices: {
         invoke: {
-          src: 'getDevices',
-          onDone: {target: 'ready', actions: 'assignAudioDevices'},
+          src: "getDevices",
+          onDone: {target: 'ready', actions: "assignAudioDevices"},
           onError: {target: 'error'},
         },
       },
       selecting: {
         on: {
-          selection: {target: 'ready', actions: 'assignSelectedAudioDevice'},
+          selection: {target: 'ready', actions: "assignSelectedAudioDevice"},
         },
       },
       error: {
@@ -90,17 +91,17 @@ const recorderMachine = createMachine<RecorderContext>(
         },
       },
       recording: {
-        invoke: {src: 'mediaRecorder', id: 'mediaRecorder'},
+        invoke: {src: "mediaRecorder", id: "mediaRecorder"},
         initial: 'playing',
         states: {
           playing: {
             on: {
               mediaRecorderCreated: {
-                actions: ['assignMediaRecorder'],
+                actions: ["assignMediaRecorder"],
               },
               pause: {
                 target: 'paused',
-                actions: sendUtil('pause', {to: 'mediaRecorder'}),
+                actions: "inline:recorder.recording.playing#pause[-1]#transition[0]",
               },
               stop: 'stopping',
             },
@@ -109,15 +110,15 @@ const recorderMachine = createMachine<RecorderContext>(
             on: {
               resume: {
                 target: 'playing',
-                actions: sendUtil('resume', {to: 'mediaRecorder'}),
+                actions: "inline:recorder.recording.paused#resume[-1]#transition[0]",
               },
               stop: 'stopping',
             },
           },
           stopping: {
-            entry: sendUtil('stop', {to: 'mediaRecorder'}),
+            entry: "inline:recorder.recording.stopping#entry[0]",
             on: {
-              chunks: {target: '#recorder.done', actions: 'assignAudioBlob'},
+              chunks: {target: '#recorder.done', actions: "assignAudioBlob"},
             },
           },
         },
